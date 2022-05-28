@@ -9,32 +9,49 @@
 
 const refs = {
   searchForm: document.querySelector('.search-form'),
-  galleryEl: document.querySelector('.gallery'),
+    galleryEl: document.querySelector('.gallery'),
+  loadMoreBtn:document.querySelector('.load-more')
 };
+const imageApiService =  new ImageApiService();   // отримуємо доступ до об`єктів та масівов/робимо екземпляр
 
 refs.searchForm.addEventListener('submit', onSearch);
-// посилання на форму 
- const searchQuery = e.currentTarget.elements.query.value;
+refs.loadMoreBtn.addEventListener('click', onLoadMore);
+
+
 
 function onSearch(e) {
     e.preventDefault();
+    // посилання на форму 
+    imageApiService.query = e.currentTarget.elements.query.value;
+    imageApiService.resetPage(); // скидання
+    imageApiService.fetchArticles().then(generateCardsMurkup);
+}
 
-    // caмбіт форми 
-const options = {
-    headers: {
-        Authorization: '27708114 - f07adda4c4d657f777ca692dd',
-    },
-};
-const url = 'https://pixabay.com/api/q=&{searchQuery}&image_type=photo&orientation=horizontal&safesearch=true&page=1&per_page=40'
-
-fetch(url, options)
-    .then(r => r.json())
-    .then(console.log);
-
+function onLoadMore() {
+  imageApiService.fetchArticles().then(generateCardsMurkup);
 }
 
 
+function generateCardsMurkup(articles) {
+  return cardsArray
+    .map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
+      return `<a href="${largeImageURL}" class="photo-card">
+        <img src="${webformatURL}" alt="${tags}" class="photo-card__img" width="300" loading="lazy" />
+        <div class="info">
+          <p class="info-item"><b>Likes</b><br />${likes}</p>
+          <p class="info-item"><b>Views</b><br />${views}</p>
+          <p class="info-item"><b>Comments</b><br />${comments}</p>
+          <p class="info-item"><b>Downloads</b><br />${downloads}</p>
+        </div>
+      </a>`;
+    })
+    .join('');
+}
 
+function appendCardsMurkup(articles) {
+  gallery.insertAdjacentHTML('beforeend', generateCardsMurkup(articles));
+}
 
-
-
+function resetGallery() {
+  gallery.innerHTML = '';
+}
