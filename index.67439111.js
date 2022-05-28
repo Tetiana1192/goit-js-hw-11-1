@@ -1,2 +1,0 @@
-var refs={searchForm:document.querySelector(".search-form"),galleryEl:document.querySelector(".gallery")};refs.searchForm.addEventListener("submit",onSearch);var searchQuery=e.currentTarget.elements.query.value;function onSearch(e){e.preventDefault();fetch("https://pixabay.com/api/q=&{searchQuery}&image_type=photo&orientation=horizontal&safesearch=true&page=1&per_page=40",{headers:{Authorization:"27708114 - f07adda4c4d657f777ca692dd"}}).then((function(e){return e.json()})).then(console.log)}
-//# sourceMappingURL=index.67439111.js.map
