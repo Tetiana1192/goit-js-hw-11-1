@@ -1,11 +1,11 @@
 import Notify from 'notiflix';
 
-import SimpleLightbox from 'simplelightbox';
-import 'simplelightbox/dist/simple-lightbox.min.css';
-import LoadMoreBtn from './js/load-moreBtn';
+// import SimpleLightbox from 'simplelightbox';
+// import 'simplelightbox/dist/simple-lightbox.min.css';
+// import LoadMoreBtn from './js/load-moreBtn';
 import ImagesApiService from './js/imageApiService.js';
-import './sass/main.scss';
-import Markup from './js/gallerymerkup';
+// import './sass/main.scss';
+// import Markup from './js/gallerymerkup';
 
 
 const refs = {
