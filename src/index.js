@@ -1,81 +1,89 @@
-import './css/styles.css';
-import debounce from 'lodash.debounce';
-import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import './css/styles.css';
-import fetchCountries from './fetchCountries.js';
+import Notify from 'notiflix';
 
-const DEBOUNCE_DELAY = 300;
+// import SimpleLightbox from 'simplelightbox';
+// import 'simplelightbox/dist/simple-lightbox.min.css';
+// import LoadMoreBtn from './js/load-moreBtn';
+import ImagesApiService from './js/imageApiService.js';
+// import './sass/main.scss';
+// import Markup from './js/gallerymerkup';
+
 
 const refs = {
-    searchInputBox: document.querySelector('#search-box'),
-    countryList: document.querySelector('.country-list'),
-    countryInfo: document.querySelector('.country-info'),
+  searchForm: document.querySelector('.search-form'),
+    galleryEl: document.querySelector('.gallery'),
+  loadMoreBtn:document.querySelector('.load-more')
 };
+const imagesAPIService = new ImagesAPIService();  
+const loadMoreBtn = new LoadMoreBtn({ selector: '.load-more' });
+const renderMarkup = new Markup({ selector: refs.gallery });
 
-refs.searchInputBox.addEventListener('input', debounce(onInputCountry, DEBOUNCE_DELAY));
+refs.searchForm.addEventListener('submit', onSearch);
+loadMoreBtn.button.addEventListener('click', onloadMoreBtnClick);
 
 
 
-  function onInputCountry(event) {
-  const countryName = event.target.value.trim();
+async function onSearch(e) {
+  e.preventDefault();
+  renderMarkup.reset();
+  imagesAPIService.query = e.currentTarget.searchQuery.value.trim();
 
-  if (countryName === '') {
-    countriesListTemplate();
-    countryInfoTemplate();
-  } else {
-    fetchCountries(countryName)
-      .then(countrys => {
-          if (countrys.length > 10) {
-              Notify.info('Too many matches found. Please enter a more specific name');
-              countriesListTemplate();
-              countryInfoTemplate();
-          } else if (countrys.length >= 2 && countrys.length <= 10) {
-              countryInfoTemplate();
-          refs.countryList.innerHTML = countryListMurkup(countrys);
-        } else {
-         countriesListTemplate();
-          refs.countryInfo.innerHTML = countryInfoMurkup(countrys);
-        }
-          
-      })
-      .catch(error => {
-        console.log(error);
-        Notify.failure('Oops, there is no country with that name');
-      });
+  if (imagesAPIService.query === '') {
+    loadMoreBtn.hideBtn();
+    Notify.info('Your query is empty. Try again!');
+    return;
   }
-}  
-    
-    function countriesListTemplate() {
-  refs.countryList.innerHTML = '';
+
+  imagesAPIService.resetPage();
+
+  try {
+    loadMoreBtn.showBtn();
+    await initFetchImages();
+  } catch (error) {
+    loadMoreBtn.hideBtn();
+    Notify.failure(error.message);
+  }
+
+  refs.form.reset();
 }
 
-function countryInfoTemplate() {
-  refs.countryInfo.innerHTML = '';
+
+
+
+async function onloadMoreBtnClick() {
+  try {
+    await initFetchImages();
+  } catch {
+    Notify.failure(error.message);
+  }
+  pageScroll();
+  renderMarkup.lightbox.refresh();
 }
 
+async function initFetchImages() {
+  
+  try {
+    loadMoreBtn.disable();
+    const images = await imagesAPIService.fetchImages();
+    renderMarkup.items = images;
+    renderMarkup.render();
+  } catch {
+    Notify.failure(error.message);
+  }
+   
 
-
-    
-
-
-function countryListMurkup(countryArray) {
-    return countryArray
-        .map(({ name, flags }) => {
-            return `<li class="country-list__item"><img src="${flags.svg}" alt="${name.common}" width="300" class="country-list_img"><span class="country-list__name">${name.common}</span></li>`;
-        })
-        .join('');
+  if (imagesAPIService.endOfHits) {
+    loadMoreBtn.hideBtn();
+    return;
+  }
+  loadMoreBtn.enable();
 }
 
-function countryInfoMurkup(countryArray) {
-    return countryArray
-        .map(({ name, flags, capital, population, languages }) => {
-            return `<div class="country-info__name"><img src="${flags.svg}" alt="${name.common
-                }" class="country-info__img" />${name.official}</div>
-        <p><span class="country-info__bold">Capital: </span>${capital}</p>
-        <p><span class="country-info__bold">Population: </span>${population}</p>
-        <p><span class="country-info__bold">Languages: </span>${Object.values(languages).join(
-                    ', ',
-                )}</p>`;
-        })
-        .join('');
+function pageScroll() {
+    const { height: formHeight } = refs.form.getBoundingClientRect();
+    const { height: cardHeight } = refs.gallery.firstElementChild.getBoundingClientRect();
+
+    window.scrollBy({
+        top: cardHeight * 2 - formHeight * 2,
+        behavior: 'smooth',
+    });
 }
