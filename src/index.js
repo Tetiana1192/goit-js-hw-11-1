@@ -15,7 +15,7 @@ const refs = {
 const newFetchPictures = new NewFetchPictures();
 
 refs.searchForm.addEventListener(`submit`, onSearch);
-refs.galleryEL.addEventListener(`click`, onViewingStart);
+refs.galleryEL.addEventListener(`click`, onGalleryStart);
 refs.loadMoreBtn.addEventListener(`click`, onloadMoreBtnClick);
 
 async function onSearch(event) {
@@ -103,7 +103,7 @@ if(newFetchPictures.page <= Math.ceil(pictures.total / 40)) {
   let gallery = new SimpleLightbox('.gallery a',{captionsData: "alt"}); 
   
 
-function onViewingStart(event) {  
+function onGalleryStart(event) {  
   
   gallery.on('show.simplelightbox'); 
   
