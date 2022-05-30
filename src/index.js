@@ -1,89 +1,122 @@
-import Notify from 'notiflix';
-
-// import SimpleLightbox from 'simplelightbox';
-// import 'simplelightbox/dist/simple-lightbox.min.css';
-// import LoadMoreBtn from './js/load-moreBtn';
-import ImagesApiService from './js/imageApiService.js';
-// import './sass/main.scss';
-// import Markup from './js/gallerymerkup';
-
+import SimpleLightbox from "simplelightbox";
+import './css/styles.css';
+import "simplelightbox/dist/simple-lightbox.min.css";
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
+import NewFetchPictures from "./JS/fetchPictures.js";
 
 const refs = {
-  searchForm: document.querySelector('.search-form'),
-    galleryEl: document.querySelector('.gallery'),
-  loadMoreBtn:document.querySelector('.load-more')
-};
-const imagesAPIService = new ImagesAPIService();  
-const loadMoreBtn = new LoadMoreBtn({ selector: '.load-more' });
-const renderMarkup = new Markup({ selector: refs.gallery });
-
-refs.searchForm.addEventListener('submit', onSearch);
-loadMoreBtn.button.addEventListener('click', onloadMoreBtnClick);
-
-
-
-async function onSearch(e) {
-  e.preventDefault();
-  renderMarkup.reset();
-  imagesAPIService.query = e.currentTarget.searchQuery.value.trim();
-
-  if (imagesAPIService.query === '') {
-    loadMoreBtn.hideBtn();
-    Notify.info('Your query is empty. Try again!');
-    return;
-  }
-
-  imagesAPIService.resetPage();
-
-  try {
-    loadMoreBtn.showBtn();
-    await initFetchImages();
-  } catch (error) {
-    loadMoreBtn.hideBtn();
-    Notify.failure(error.message);
-  }
-
-  refs.form.reset();
+    searchForm: document.querySelector(`#search-form`),
+    inputEl: document.querySelector(`input`),
+    btnEL: document.querySelector(`button[type="submit"]`),
+    galleryEL:document.querySelector(`.gallery`),
+    loadMoreBtn: document.querySelector(`button[type="button"]`),
 }
 
+const newFetchPictures = new NewFetchPictures();
 
+refs.searchForm.addEventListener(`submit`, onSearch);
+refs.galleryEL.addEventListener(`click`, onViewingStart);
+refs.loadMoreBtn.addEventListener(`click`, onloadMoreBtnClick);
 
-
-async function onloadMoreBtnClick() {
-  try {
-    await initFetchImages();
-  } catch {
-    Notify.failure(error.message);
+async function onSearch(event) {
+event.preventDefault();
+removeActiveClassOnBtn();
+refs.galleryEL.innerHTML = "";
+newFetchPictures.searchQuery = event.currentTarget.elements.searchQuery.value;
+newFetchPictures.resetPage();
+if(newFetchPictures.searchQuery) {
+  try{
+    const pictures = await newFetchPictures.fetchPictures();
+    renderPictures(pictures);        
   }
-  pageScroll();
-  renderMarkup.lightbox.refresh();
-}
+   catch(error) {
+    console.log(error.message);
+     }       
+   } 
+ };
 
-async function initFetchImages() {
+async function onloadMoreBtnClick() { 
+  try {
+    
+    const pictures = await newFetchPictures.fetchPictures();
+    renderPictures(pictures); 
+          
+  } 
   
-  try {
-    loadMoreBtn.disable();
-    const images = await imagesAPIService.fetchImages();
-    renderMarkup.items = images;
-    renderMarkup.render();
-  } catch {
-    Notify.failure(error.message);
-  }
-   
+  catch(error) {
+    console.log(error.message);
+  } 
+  pageScroll();
+};
 
-  if (imagesAPIService.endOfHits) {
-    loadMoreBtn.hideBtn();
-    return;
-  }
-  loadMoreBtn.enable();
+function renderPictures(pictures) {
+
+  if(pictures.hits.length === 0) {    
+    removeActiveClassOnBtn();
+    Notify.failure("Sorry, there are no images matching your search query. Please try again.");
+  }  else {
+    Notify.success(`Hooray! We found totalHits ${pictures.total} images.`);
+    const pictureList = pictures.hits.map((picture) => 
+     `     
+    <a class="photo-card" href="${picture.largeImageURL}">
+    <img src=${picture.webformatURL}" alt="${picture.tags}" title="${picture.tags}" loading="lazy" />      
+<div class="info">
+ <p class="info-item">
+   <b>Likes</b>${picture.likes}
+ </p>
+ <p class="info-item">
+   <b>Views</b>${picture.views}
+ </p>
+ <p class="info-item">
+   <b>Comments</b>${picture.comments}
+ </p>
+ <p class="info-item">
+   <b>Downloads</b>${picture.downloads}
+ </p>
+</div>
+</a>  
+`
+).join("");
+
+refs.galleryEL.insertAdjacentHTML("beforeend", pictureList);
+
+if(newFetchPictures.page <= Math.ceil(pictures.total / 40)) {
+  addActiveClassOnBtn();  
+} else {
+  removeActiveClassOnBtn();
+   Notify.failure("We're sorry, but you've reached the end of search results."); 
 }
+
+     } 
+  };
+
+  function addActiveClassOnBtn() {
+    refs.loadMoreBtn.classList.add(`active`);
+  };
+
+  function removeActiveClassOnBtn() {
+    refs.loadMoreBtn.classList.remove(`active`);
+  };
+
+ 
+  
+  let gallery = new SimpleLightbox('.gallery a',{captionsData: "alt"}); 
+  
+
+function onViewingStart(event) {  
+  
+  gallery.on('show.simplelightbox'); 
+  
+  gallery.refresh(); 
+};
+
 
 function pageScroll() {
-    const { height: formHeight } = refs.form.getBoundingClientRect();
-    const { height: cardHeight } = refs.gallery.firstElementChild.getBoundingClientRect();
+  const { height: formHeight } = refs.searchForm.getBoundingClientRect();
+  const { height: cardHeight } = refs.galleryEL.firstElementChild.getBoundingClientRect();
 
-    window.scrollBy({
-        top: cardHeight * 2 - formHeight * 2,
-        behavior: 'smooth',
-    });
+  window.scrollBy({
+    top: cardHeight * 2 - formHeight * 2,
+    behavior: 'smooth',
+  });
 }
